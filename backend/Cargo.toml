@@ -1,6 +1,9 @@
 [package]
-name = "backend"
+name = "inari-backend"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+actix-protobuf = "0.11.0"
+actix-web = "4.9.0"
+prost = { version = "0.13.5", features = ["prost-derive"] }
