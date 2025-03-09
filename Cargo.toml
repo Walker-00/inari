@@ -1,5 +1,6 @@
 [workspace]
 members = ["backend", "desktop"]
+resolver = "3"
 
 [profile.release]
 strip = true
