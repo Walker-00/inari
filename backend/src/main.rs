@@ -18,6 +18,7 @@ pub struct Idk {
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     DB.use_ns("namespace").use_db("inari").await.unwrap();
+
     HttpServer::new(|| App::new())
         .bind("127.0.0.1:9690")?
         .run()
