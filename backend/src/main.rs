@@ -4,6 +4,7 @@ use actix_web::{App, HttpServer};
 use prost::Message;
 use structures::static_vars::DB;
 
+mod http_apis;
 mod structures;
 
 #[derive(Clone, PartialEq, Message)]
