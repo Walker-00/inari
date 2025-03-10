@@ -3,6 +3,8 @@ use std::io;
 use actix_web::{App, HttpServer};
 use prost::Message;
 
+mod structures;
+
 #[derive(Clone, PartialEq, Message)]
 pub struct Idk {
     #[prost(string)]
