@@ -1,3 +1,5 @@
 use std::sync::LazyLock;
 
-pub static DB: LazyLock<Surre>
+use surrealdb::{Surreal, engine::local::Db};
+
+pub static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
