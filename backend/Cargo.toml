@@ -7,6 +7,7 @@ edition = "2024"
 actix-protobuf = "0.11.0"
 actix-web = "4.9.0"
 chrono = { version = "0.4.40", default-features = false, features = ["clock"] }
+image = "0.25.5"
 prost = { version = "0.13.5", features = ["prost-derive"] }
 prost-serde = "0.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
