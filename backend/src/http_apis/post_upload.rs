@@ -1,5 +1,6 @@
 use actix_protobuf::ProtoBuf;
+use surrealdb::Datetime;
 
-use crate::structures::{post::Post, static_vars::DB};
+use crate::structures::{post::PostUp, static_vars::DB};
 
-pub fn post_upload(post: ProtoBuf<Post>) {}
+pub fn post_upload(post: ProtoBuf<PostUp>) {}
