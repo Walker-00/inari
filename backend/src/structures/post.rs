@@ -1,10 +1,8 @@
 use std::{collections::HashMap, io::Cursor};
 
-use chrono::Utc;
 use image::{ImageFormat, ImageReader};
 use prost::Message;
 use serde::{Deserialize, Serialize};
-use surrealdb::Datetime;
 use uuid::Uuid;
 
 #[derive(Clone, PartialEq, Message, Serialize, Deserialize)]
@@ -29,16 +27,29 @@ pub struct PostUp {
     pub uninstall_script: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize)]
+pub struct Posts {
+    #[prost(repeated, message, tag = "1")]
+    posts: Vec<PostDb>,
+}
+
+#[derive(Serialize, Deserialize, Message)]
 pub struct PostDb {
-    pub date: Datetime,
+    #[prost(string, tag = "1")]
     pub title: String,
+    #[prost(string, tag = "2")]
     pub description: String,
+    #[prost(string, tag = "3")]
     pub rice_pic: String,
+    #[prost(map = "string, message", tag = "4")]
     pub packages: HashMap<String, PackageList>,
+    #[prost(optional, string, tag = "5")]
     pub install_script: Option<String>,
+    #[prost(optional, string, tag = "6")]
     pub uninstall_script: Option<String>,
+    #[prost(uint64, tag = "7")]
     pub downloads: u64,
+    #[prost(int64, tag = "8")]
     pub votes: i64,
 }
 
@@ -55,7 +66,6 @@ impl TryFrom<PostUp> for PostDb {
         image.save_with_format(&rice_pic, ImageFormat::Jpeg)?;
 
         Ok(PostDb {
-            date: Utc::now().into(),
             title: value.title,
             description: value.description,
             rice_pic,
@@ -65,5 +75,11 @@ impl TryFrom<PostUp> for PostDb {
             downloads: 0,
             votes: 0,
         })
+    }
+}
+
+impl From<Vec<PostDb>> for Posts {
+    fn from(value: Vec<PostDb>) -> Self {
+        Self { posts: value }
     }
 }
