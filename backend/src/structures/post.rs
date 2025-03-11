@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Cursor};
 
 use chrono::Utc;
+use image::ImageReader;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use surrealdb::Datetime;
@@ -40,9 +41,16 @@ pub struct PostDb {
     pub votes: i64,
 }
 
-impl From<PostUp> for PostDb {
-    fn from(value: PostUp) -> Self {
-        PostDb {
+impl TryFrom<PostUp> for PostDb {
+    type Error = image::ImageError;
+
+    fn try_from(value: PostUp) -> Result<Self, Self::Error> {
+        let image = ImageReader::new(Cursor::new(value.rice_pic))
+            .with_guessed_format()?
+            .decode()?;
+
+        image.save_with_format("", format);
+        Ok(PostDb {
             date: Utc::now().into(),
             title: value.title,
             description: value.description,
@@ -52,6 +60,6 @@ impl From<PostUp> for PostDb {
             uninstall_script: value.uninstall_script,
             downloads: 0,
             votes: 0,
-        }
+        })
     }
 }
