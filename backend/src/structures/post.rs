@@ -40,16 +40,18 @@ pub struct PostDb {
     pub votes: i64,
 }
 
-impl Into<PostDb> for PostUp {
-    fn into(self) -> PostDb {
+impl From<PostUp> for PostDb {
+    fn from(value: PostUp) -> Self {
         PostDb {
             date: Utc::now().into(),
-            title: self.title,
-            description: self.description,
+            title: value.title,
+            description: value.description,
             rice_pic: "".into(),
-            install_script: self.install_script,
-            uninstall_script: self.uninstall_script,
+            packages: value.packages,
+            install_script: value.install_script,
+            uninstall_script: value.uninstall_script,
             downloads: 0,
+            votes: 0,
         }
     }
 }
