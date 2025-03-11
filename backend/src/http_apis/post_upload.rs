@@ -1,11 +1,12 @@
 use actix_protobuf::{ProtoBuf, ProtoBufResponseBuilder};
-use actix_web::{HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, post};
 
 use crate::structures::{
     post::{PostDb, PostUp},
     static_vars::DB,
 };
 
+#[post("/upload/rice")]
 pub async fn post_upload(post: ProtoBuf<PostUp>) -> impl Responder {
     let postdb: PostDb = match post.0.try_into() {
         Ok(postdb) => postdb,

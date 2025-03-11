@@ -1,6 +1,7 @@
 use std::{fs, io, path::Path};
 
 use actix_web::{App, HttpServer};
+use http_apis::post_upload::post_upload;
 use prost::Message;
 use structures::static_vars::{DATA_PATH, DB};
 
@@ -22,12 +23,12 @@ async fn main() -> io::Result<()> {
     let path = Path::new(&*DATA_PATH);
 
     if !path.exists() {
-        fs::create_dir_all(&*DATA_PATH);
+        fs::create_dir_all(&*DATA_PATH).unwrap();
     } else if !path.is_dir() {
         panic!("The Data Path: {} is not a dri", &*DATA_PATH);
     }
 
-    HttpServer::new(|| App::new())
+    HttpServer::new(|| App::new().service(post_upload))
         .bind("127.0.0.1:9690")?
         .run()
         .await
