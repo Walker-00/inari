@@ -1,10 +1,11 @@
 use std::{collections::HashMap, io::Cursor};
 
 use chrono::Utc;
-use image::ImageReader;
+use image::{ImageFormat, ImageReader};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use surrealdb::Datetime;
+use uuid::Uuid;
 
 #[derive(Clone, PartialEq, Message, Serialize, Deserialize)]
 pub struct PackageList {
@@ -49,12 +50,15 @@ impl TryFrom<PostUp> for PostDb {
             .with_guessed_format()?
             .decode()?;
 
-        image.save_with_format("", format);
+        let rice_pic = format!("{}.jpeg", Uuid::new_v4());
+
+        image.save_with_format(&rice_pic, ImageFormat::Jpeg)?;
+
         Ok(PostDb {
             date: Utc::now().into(),
             title: value.title,
             description: value.description,
-            rice_pic: "".into(),
+            rice_pic,
             packages: value.packages,
             install_script: value.install_script,
             uninstall_script: value.uninstall_script,
