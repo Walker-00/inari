@@ -7,3 +7,5 @@ edition = "2024"
 iced = { version = "0.13.1", features = ["image"] }
 iced_font_awesome = "0.2.1"
 nerd_font = { version = "0.2.8", features = ["iced"] }
+reqwest = "0.12.13"
+reqwest-protobuf = "0.1.0"
