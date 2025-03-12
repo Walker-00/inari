@@ -1,19 +1,25 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
-use std::process::exit;
 
+use iced::advanced::graphics::text::font_system;
 use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
-use nerd_font::NerdFont;
-use nerd_font::categories::Dev;
 use prost::Message as ProtoMessage;
-use tracing::{Level, error};
+use rfd::FileDialog;
+use tracing::Level;
 
-pub const NFONT: Font = Font {
-    family: iced::font::Family::Name("Hack"),
-    weight: iced::font::Weight::Normal,
-    stretch: iced::font::Stretch::Normal,
-    style: iced::font::Style::Normal,
+const ICON_FONT: &[u8] = include_bytes!("/usr/share/fonts/noto/NotoColorEmoji.ttf");
+
+pub const ICFONT: Font = Font {
+    family: iced::font::Family::Name("Noto Color Emoji"),
+    ..Font::DEFAULT
 };
+
+fn load_nerd_font() {
+    let mut font_system = font_system().write().unwrap();
+
+    font_system.load_font(Cow::from(ICON_FONT));
+}
 
 #[derive(ProtoMessage, Clone)]
 pub struct Posts {
@@ -67,6 +73,7 @@ pub enum Page {
 pub enum Message {
     Pressed(PostDb),
     Loaded(Vec<PostDb>),
+    FilePick,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -76,9 +83,8 @@ pub struct Post {
 }
 
 impl MainUi {
-    //const FONT: &'static [u8] = include_bytes!("/usr/share/fonts/TTF/ZedMonoNerdFont-Regular.ttf");
-
     pub fn new() -> (Self, Task<Message>) {
+        load_nerd_font();
         (
             MainUi {
                 current_page: Page::Feed,
@@ -114,6 +120,10 @@ impl MainUi {
                 self.loading = false;
                 self.feed_posts = posts;
             }
+            Message::FilePick => {
+                let idk = FileDialog::new().pick_file();
+                println!("{idk:?}");
+            }
         }
     }
 
@@ -122,20 +132,17 @@ impl MainUi {
             Ok(data) => match data.bytes().await {
                 Ok(data) => data,
                 Err(shits) => {
-                    error!("{shits}");
-                    exit(9690)
+                    panic!("{shits}");
                 }
             },
             Err(shits) => {
-                error!("{shits}");
-                exit(9691);
+                panic!("{shits}");
             }
         };
         match Posts::decode(data) {
             Ok(data) => data.posts,
             Err(shits) => {
-                error!("{shits}");
-                exit(9692);
+                panic!("{shits}");
             }
         }
     }
@@ -182,18 +189,20 @@ impl MainUi {
 
     pub fn header(&self) -> Element<Message> {
         row![
-            container(text(Dev::Android.to_string()))
+            container(MouseArea::new(text("🍚").font(ICFONT)).on_press(Message::FilePick))
                 .align_y(Alignment::Center)
                 .padding(10),
-            container(text("Inari").font(NFONT).size(30))
+            container(text("Inari").size(30))
                 .align_y(Alignment::Center)
                 .align_x(Alignment::Center)
                 .width(iced::Length::Fill)
-                .padding(10)
+                .padding(10),
+            container("🦀")
         ]
         .into()
     }
 
+    #[allow(elided_named_lifetimes)]
     pub fn body<'a>(&'a self, data: &'a PostDb) -> Column<Message> {
         let image = Image::new(&data.rice_pic)
             .width(300)
@@ -221,8 +230,7 @@ fn main() -> iced::Result {
         .with_line_number(true)
         .init();
 
-    iced::application("Test", MainUi::update, MainUi::view)
-        .font(NerdFont::FONT_BYTES)
+    iced::application("Inari", MainUi::update, MainUi::view)
         .theme(MainUi::theme)
         .run_with(MainUi::new)
 }
