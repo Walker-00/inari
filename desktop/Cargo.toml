@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-iced = { version = "0.13.1", features = ["image"] }
+iced = { version = "0.13.1", features = ["image", "tokio"] }
 iced_font_awesome = "0.2.1"
 nerd_font = { version = "0.2.8", features = ["iced"] }
 prost = "0.13.5"
-reqwest = "0.12.13"
+reqwest = { version = "0.12.13", features = ["blocking"] }

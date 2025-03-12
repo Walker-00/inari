@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
-use iced::{Alignment, Element, Font, Length, Theme};
+use iced::{Alignment, Element, Font, Length, Task, Theme};
 use nerd_font::NerdFont;
 use nerd_font::categories::Dev;
+use prost::Message as ProtoMessage;
 
 pub const NFONT: Font = Font {
     family: iced::font::Family::Name("Hack"),
@@ -10,10 +13,44 @@ pub const NFONT: Font = Font {
     style: iced::font::Style::Normal,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(ProtoMessage, Clone)]
+pub struct Posts {
+    #[prost(repeated, message, tag = "1")]
+    posts: Vec<PostDb>,
+}
+
+#[derive(Clone, PartialEq, ProtoMessage)]
+pub struct PackageList {
+    #[prost(repeated, string, tag = "1")]
+    pub list: Vec<String>,
+}
+
+#[derive(ProtoMessage, Clone)]
+pub struct PostDb {
+    #[prost(string, tag = "1")]
+    pub title: String,
+    #[prost(string, tag = "2")]
+    pub description: String,
+    #[prost(string, tag = "3")]
+    pub rice_pic: String,
+    #[prost(map = "string, message", tag = "4")]
+    pub packages: HashMap<String, PackageList>,
+    #[prost(optional, string, tag = "5")]
+    pub install_script: Option<String>,
+    #[prost(optional, string, tag = "6")]
+    pub uninstall_script: Option<String>,
+    #[prost(uint64, tag = "7")]
+    pub downloads: u64,
+    #[prost(int64, tag = "8")]
+    pub votes: i64,
+}
+
+#[derive(Debug, Clone)]
 pub struct MainUi {
-    pub current_page: Page,
-    pub post_data: Option<Post>,
+    current_page: Page,
+    post_data: Option<Post>,
+    feed_posts: Vec<PostDb>,
+    loading: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -24,9 +61,10 @@ pub enum Page {
     Create,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Message {
     Pressed(Post),
+    Loaded(Vec<PostDb>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -38,9 +76,25 @@ pub struct Post {
 impl MainUi {
     //const FONT: &'static [u8] = include_bytes!("/usr/share/fonts/TTF/ZedMonoNerdFont-Regular.ttf");
 
+    pub fn new() -> (Self, Task<Message>) {
+        (
+            MainUi {
+                current_page: Page::Feed,
+                post_data: None,
+                feed_posts: vec![],
+                loading: true,
+            },
+            Task::perform(MainUi::fetch_post(), Message::Loaded),
+        )
+    }
+
     pub fn view(&self) -> Element<Message> {
         let post_column = if self.current_page == Page::Feed {
-            self.feed()
+            if !self.loading {
+                self.feed()
+            } else {
+                container("loading...").into()
+            }
         } else {
             self.post_details()
         };
@@ -54,7 +108,22 @@ impl MainUi {
                 self.current_page = Page::Detail;
                 self.post_data = Some(u);
             }
+            Message::Loaded(posts) => {
+                self.loading = false;
+                self.feed_posts = posts;
+            }
         }
+    }
+
+    pub async fn fetch_post() -> Vec<PostDb> {
+        let data = reqwest::get("http://127.0.0.1:9690/bruh")
+            .await
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
+
+        Posts::decode(data).unwrap().posts
     }
 
     pub fn feed(&self) -> Element<Message> {
@@ -138,5 +207,5 @@ fn main() -> iced::Result {
     iced::application("Test", MainUi::update, MainUi::view)
         .font(NerdFont::FONT_BYTES)
         .theme(MainUi::theme)
-        .run()
+        .run_with(MainUi::new)
 }
