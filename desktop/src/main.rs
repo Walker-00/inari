@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::process::exit;
 
 use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use nerd_font::NerdFont;
 use nerd_font::categories::Dev;
 use prost::Message as ProtoMessage;
+use tracing::{Level, error};
 
 pub const NFONT: Font = Font {
     family: iced::font::Family::Name("Hack"),
@@ -120,17 +122,20 @@ impl MainUi {
             Ok(data) => match data.bytes().await {
                 Ok(data) => data,
                 Err(shits) => {
-                    panic!("{}", shits.to_string())
+                    error!("{shits}");
+                    exit(9690)
                 }
             },
             Err(shits) => {
-                panic!("{}", shits.to_string())
+                error!("{shits}");
+                exit(9691);
             }
         };
         match Posts::decode(data) {
             Ok(data) => data.posts,
             Err(shits) => {
-                panic!("{}", shits.to_string())
+                error!("{shits}");
+                exit(9692);
             }
         }
     }
@@ -214,6 +219,14 @@ impl MainUi {
 
 fn main() -> iced::Result {
     color_eyre::install().unwrap();
+    tracing_subscriber::fmt()
+        .with_max_level(Level::ERROR)
+        .pretty()
+        .with_ansi(true)
+        .with_file(true)
+        .with_line_number(true)
+        .init();
+
     iced::application("Test", MainUi::update, MainUi::view)
         .font(NerdFont::FONT_BYTES)
         .theme(MainUi::theme)
