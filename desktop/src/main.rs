@@ -12,11 +12,13 @@ pub const NFONT: Font = Font {
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct MainUi {
-    pub value: i32,
+    pub current_page: Page,
+    pub post_data: Option<Post>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Page {
+    #[default]
     Feed,
     Detail,
     Create,
@@ -24,8 +26,6 @@ pub enum Page {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Message {
-    Inc,
-    Dec,
     Pressed(Post),
 }
 
@@ -39,39 +39,60 @@ impl MainUi {
     //const FONT: &'static [u8] = include_bytes!("/usr/share/fonts/TTF/ZedMonoNerdFont-Regular.ttf");
 
     pub fn view(&self) -> Element<Message> {
-        let posts: Vec<Post> = (0..31)
-            .map(|v| Post {
-                image: String::from("/home/walker/github/dotfiles/Wallpapers/buddha.jpg"),
-                text: v,
-            })
-            .collect();
-        let post_per_row = posts.chunks(3);
-        let post_column = scrollable(column(post_per_row.map(|v| {
-            row(v.iter().map(|i| {
-                MouseArea::new(self.body(i).padding(5))
-                    .on_press(Message::Pressed(i.to_owned()))
-                    .into()
-            }))
+        let post_column = if self.current_page == Page::Feed {
+            let posts: Vec<Post> = (0..31)
+                .map(|v| Post {
+                    image: String::from("/home/walker/github/dotfiles/Wallpapers/buddha.jpg"),
+                    text: v,
+                })
+                .collect();
+            let post_per_row = posts.chunks(3);
+            scrollable(column(post_per_row.map(|v| {
+                row(v.iter().map(|i| {
+                    MouseArea::new(self.body(i).padding(5))
+                        .on_press(Message::Pressed(i.to_owned()))
+                        .into()
+                }))
+                .into()
+            })))
+            .width(Length::Fill)
+            .height(Length::Fill)
             .into()
-        })))
-        .width(Length::Fill)
-        .height(Length::Fill);
+        } else {
+            self.post_details()
+        };
 
         column![self.header(), post_column].into()
     }
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::Inc => {
-                self.value += 1;
-            }
-            Message::Dec => {
-                self.value -= 1;
-            }
             Message::Pressed(u) => {
-                // println!("{u}");
+                self.current_page = Page::Detail;
+                self.post_data = Some(u);
             }
         }
+    }
+
+    pub fn post_details(&self) -> Element<Message> {
+        let data = self.post_data.clone().unwrap();
+        let image = row![
+            container(
+                Image::new(data.image)
+                    .width(700)
+                    .height(330)
+                    .content_fit(iced::ContentFit::Fill),
+            )
+            .align_x(Alignment::Center)
+            .width(Length::Fill)
+        ];
+
+        let text_content = text(data.text).size(20);
+
+        container(column![image, text_content].spacing(10).padding(10))
+            .width(Length::Fill)
+            .padding(5)
+            .into()
     }
 
     pub fn theme(&self) -> Theme {
