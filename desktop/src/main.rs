@@ -40,24 +40,7 @@ impl MainUi {
 
     pub fn view(&self) -> Element<Message> {
         let post_column = if self.current_page == Page::Feed {
-            let posts: Vec<Post> = (0..31)
-                .map(|v| Post {
-                    image: String::from("/home/walker/github/dotfiles/Wallpapers/buddha.jpg"),
-                    text: v,
-                })
-                .collect();
-            let post_per_row = posts.chunks(3);
-            scrollable(column(post_per_row.map(|v| {
-                row(v.iter().map(|i| {
-                    MouseArea::new(self.body(i).padding(5))
-                        .on_press(Message::Pressed(i.to_owned()))
-                        .into()
-                }))
-                .into()
-            })))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+            self.feed()
         } else {
             self.post_details()
         };
@@ -72,6 +55,27 @@ impl MainUi {
                 self.post_data = Some(u);
             }
         }
+    }
+
+    pub fn feed(&self) -> Element<Message> {
+        let posts: Vec<Post> = (0..31)
+            .map(|v| Post {
+                image: String::from("/home/walker/github/dotfiles/Wallpapers/buddha.jpg"),
+                text: v,
+            })
+            .collect();
+        let post_per_row = posts.chunks(3);
+        scrollable(column(post_per_row.map(|v| {
+            row(v.iter().map(|i| {
+                MouseArea::new(self.body(i).padding(5))
+                    .on_press(Message::Pressed(i.to_owned()))
+                    .into()
+            }))
+            .into()
+        })))
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
     }
 
     pub fn post_details(&self) -> Element<Message> {
