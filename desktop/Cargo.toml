@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+color-eyre = "0.6.3"
 iced = { version = "0.13.1", features = ["image", "tokio"] }
 iced_font_awesome = "0.2.1"
 nerd_font = { version = "0.2.8", features = ["iced"] }

@@ -116,14 +116,23 @@ impl MainUi {
     }
 
     pub async fn fetch_post() -> Vec<PostDb> {
-        let data = reqwest::get("http://127.0.0.1:9690/bruh")
-            .await
-            .unwrap()
-            .bytes()
-            .await
-            .unwrap();
-
-        Posts::decode(data).unwrap().posts
+        let data = match reqwest::get("http://127.0.0.1:9690/bruh").await {
+            Ok(data) => match data.bytes().await {
+                Ok(data) => data,
+                Err(shits) => {
+                    panic!("{}", shits.to_string())
+                }
+            },
+            Err(shits) => {
+                panic!("{}", shits.to_string())
+            }
+        };
+        match Posts::decode(data) {
+            Ok(data) => data.posts,
+            Err(shits) => {
+                panic!("{}", shits.to_string())
+            }
+        }
     }
 
     pub fn feed(&self) -> Element<Message> {
@@ -204,6 +213,7 @@ impl MainUi {
 }
 
 fn main() -> iced::Result {
+    color_eyre::install().unwrap();
     iced::application("Test", MainUi::update, MainUi::view)
         .font(NerdFont::FONT_BYTES)
         .theme(MainUi::theme)
