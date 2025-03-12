@@ -50,7 +50,7 @@ pub struct PostDb {
 #[derive(Debug, Clone)]
 pub struct MainUi {
     current_page: Page,
-    post_data: Option<Post>,
+    post_data: Option<PostDb>,
     feed_posts: Vec<PostDb>,
     loading: bool,
 }
@@ -65,7 +65,7 @@ pub enum Page {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Pressed(Post),
+    Pressed(PostDb),
     Loaded(Vec<PostDb>),
 }
 
@@ -141,13 +141,7 @@ impl MainUi {
     }
 
     pub fn feed(&self) -> Element<Message> {
-        let posts: Vec<Post> = (0..31)
-            .map(|v| Post {
-                image: String::from("/home/walker/github/dotfiles/Wallpapers/buddha.jpg"),
-                text: v,
-            })
-            .collect();
-        let post_per_row = posts.chunks(3);
+        let post_per_row = self.feed_posts.chunks(3);
         scrollable(column(post_per_row.map(|v| {
             row(v.iter().map(|i| {
                 MouseArea::new(self.body(i).padding(5))
@@ -165,7 +159,7 @@ impl MainUi {
         let data = self.post_data.clone().unwrap();
         let image = row![
             container(
-                Image::new(data.image)
+                Image::new(data.rice_pic)
                     .width(700)
                     .height(330)
                     .content_fit(iced::ContentFit::Fill),
@@ -174,7 +168,7 @@ impl MainUi {
             .width(Length::Fill)
         ];
 
-        let text_content = text(data.text).size(20);
+        let text_content = text(data.title).size(20);
 
         container(column![image, text_content].spacing(10).padding(10))
             .width(Length::Fill)
@@ -200,13 +194,13 @@ impl MainUi {
         .into()
     }
 
-    pub fn body(&self, data: &Post) -> Column<Message> {
-        let image = Image::new(&data.image)
+    pub fn body<'a>(&'a self, data: &'a PostDb) -> Column<Message> {
+        let image = Image::new(&data.rice_pic)
             .width(300)
             .height(150)
             .content_fit(iced::ContentFit::Fill);
 
-        let text_content = text(data.text).size(20);
+        let text_content = text(&data.title).size(20);
 
         let post = container(column![image, text_content].spacing(10).padding(10))
             .width(320)
