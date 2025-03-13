@@ -1,8 +1,12 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
 
 use iced::advanced::graphics::text::font_system;
-use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
+use iced::widget::image::Handle;
+use iced::widget::{
+    Column, Image, MouseArea, column, container, image, row, scrollable, text, text_input,
+};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use prost::Message as ProtoMessage;
 use rfd::FileDialog;
@@ -92,6 +96,7 @@ pub enum Message {
     Loaded(Vec<PostDb>),
     FilePick,
     Router(Page),
+    TitleChanged(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -142,11 +147,31 @@ impl MainUi {
                 self.feed_posts = posts;
             }
             Message::FilePick => {
-                let idk = FileDialog::new().pick_file();
-                println!("{idk:?}");
+                if let Some(file) = FileDialog::new().pick_file() {
+                    if let Some(post) = self.post_upload.as_mut() {
+                        post.rice_pic = fs::read(file).unwrap();
+                    } else {
+                        let post_upload = PostUp {
+                            rice_pic: fs::read(file).unwrap(),
+                            ..Default::default()
+                        };
+                        self.post_upload = Some(post_upload);
+                    }
+                }
             }
             Message::Router(page) => {
                 self.current_page = page;
+            }
+            Message::TitleChanged(input) => {
+                if let Some(post) = self.post_upload.as_mut() {
+                    post.title = input;
+                } else {
+                    let post_upload = PostUp {
+                        title: input,
+                        ..Default::default()
+                    };
+                    self.post_upload = Some(post_upload);
+                }
             }
         }
     }
@@ -208,15 +233,45 @@ impl MainUi {
     }
 
     pub fn upload_post(&self) -> Element<Message> {
-        MouseArea::new(row![
+        let pick_button = MouseArea::new(row![
             text("Pick the ").size(20),
             text("🌾").size(20).font(ICFONT)
         ])
-        .on_press(Message::FilePick)
+        .on_press(Message::FilePick);
+
+        let image: Element<Message> = if let Some(postup) = &self.post_upload {
+            if !postup.rice_pic.is_empty() {
+                container(
+                    image::viewer(Handle::from_bytes(postup.rice_pic.clone()))
+                        .width(700)
+                        .height(330)
+                        .content_fit(iced::ContentFit::Contain),
+                )
+                .align_x(Alignment::Start)
+                .into()
+            } else {
+                column![].into()
+            }
+        } else {
+            column![].into()
+        };
+
+        let title_input: Element<Message> = text_input(
+            "Type some title...",
+            &self.post_upload.clone().unwrap_or_default().title,
+        )
+        .on_input(Message::TitleChanged)
+        .into();
+
+        container(
+            column![pick_button, image, title_input]
+                .spacing(10)
+                .padding(10),
+        )
+        .align_x(Alignment::Start)
+        .width(Length::Fill)
+        .padding(5)
         .into()
-        if let Some(postup) = self.post_upload {
-            let image = image
-        }
     }
 
     pub fn theme(&self) -> Theme {
