@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use iced::advanced::graphics::text::font_system;
-use iced::widget::{Column, Image, MouseArea, button, column, container, row, scrollable, text};
+use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use prost::Message as ProtoMessage;
 use rfd::FileDialog;
@@ -53,12 +53,29 @@ pub struct PostDb {
     pub votes: i64,
 }
 
+#[derive(Clone, PartialEq, ProtoMessage)]
+pub struct PostUp {
+    #[prost(string, tag = "1")]
+    pub title: String,
+    #[prost(string, tag = "2")]
+    pub description: String,
+    #[prost(bytes, tag = "3")]
+    pub rice_pic: Vec<u8>,
+    #[prost(map = "string, message", tag = "4")]
+    pub packages: HashMap<String, PackageList>,
+    #[prost(optional, string, tag = "5")]
+    pub install_script: Option<String>,
+    #[prost(optional, string, tag = "6")]
+    pub uninstall_script: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct MainUi {
     current_page: Page,
     post_data: Option<PostDb>,
     feed_posts: Vec<PostDb>,
     loading: bool,
+    post_upload: Option<PostUp>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -92,6 +109,7 @@ impl MainUi {
                 post_data: None,
                 feed_posts: vec![],
                 loading: true,
+                post_upload: None,
             },
             Task::perform(MainUi::fetch_post(), Message::Loaded),
         )
@@ -190,11 +208,15 @@ impl MainUi {
     }
 
     pub fn upload_post(&self) -> Element<Message> {
-        button(text("🌾").font(ICFONT))
-            .on_press(Message::FilePick)
-            .width(100)
-            .height(100)
-            .into()
+        MouseArea::new(row![
+            text("Pick the ").size(20),
+            text("🌾").size(20).font(ICFONT)
+        ])
+        .on_press(Message::FilePick)
+        .into()
+        if let Some(postup) = self.post_upload {
+            let image = image
+        }
     }
 
     pub fn theme(&self) -> Theme {
@@ -204,7 +226,8 @@ impl MainUi {
     pub fn header(&self) -> Element<Message> {
         row![
             container(
-                MouseArea::new(text("🍚").font(ICFONT)).on_press(Message::Router(Page::Create))
+                MouseArea::new(text("🍚").size(32).font(ICFONT))
+                    .on_press(Message::Router(Page::Create))
             )
             .align_y(Alignment::Center)
             .padding(10),
