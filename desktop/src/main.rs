@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use iced::advanced::graphics::text::font_system;
-use iced::widget::{Column, Image, MouseArea, column, container, row, scrollable, text};
+use iced::widget::{Column, Image, MouseArea, button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use prost::Message as ProtoMessage;
 use rfd::FileDialog;
@@ -27,13 +27,13 @@ pub struct Posts {
     posts: Vec<PostDb>,
 }
 
-#[derive(Clone, PartialEq, ProtoMessage)]
+#[derive(ProtoMessage, Clone, PartialEq, Eq)]
 pub struct PackageList {
     #[prost(repeated, string, tag = "1")]
     pub list: Vec<String>,
 }
 
-#[derive(ProtoMessage, Clone)]
+#[derive(ProtoMessage, Clone, PartialEq, Eq)]
 pub struct PostDb {
     #[prost(string, tag = "1")]
     pub title: String,
@@ -74,6 +74,7 @@ pub enum Message {
     Pressed(PostDb),
     Loaded(Vec<PostDb>),
     FilePick,
+    Router(Page),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -97,14 +98,16 @@ impl MainUi {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let post_column = if self.current_page == Page::Feed {
-            if !self.loading {
-                self.feed()
-            } else {
-                container("loading...").into()
+        let post_column = match self.current_page {
+            Page::Feed => {
+                if !self.loading {
+                    self.feed()
+                } else {
+                    container("loading...").into()
+                }
             }
-        } else {
-            self.post_details()
+            Page::Detail => self.post_details(),
+            Page::Create => self.upload_post(),
         };
 
         column![self.header(), post_column].into()
@@ -123,6 +126,9 @@ impl MainUi {
             Message::FilePick => {
                 let idk = FileDialog::new().pick_file();
                 println!("{idk:?}");
+            }
+            Message::Router(page) => {
+                self.current_page = page;
             }
         }
     }
@@ -183,15 +189,25 @@ impl MainUi {
             .into()
     }
 
+    pub fn upload_post(&self) -> Element<Message> {
+        button(text("🌾").font(ICFONT))
+            .on_press(Message::FilePick)
+            .width(100)
+            .height(100)
+            .into()
+    }
+
     pub fn theme(&self) -> Theme {
         Theme::TokyoNightStorm
     }
 
     pub fn header(&self) -> Element<Message> {
         row![
-            container(MouseArea::new(text("🍚").font(ICFONT)).on_press(Message::FilePick))
-                .align_y(Alignment::Center)
-                .padding(10),
+            container(
+                MouseArea::new(text("🍚").font(ICFONT)).on_press(Message::Router(Page::Create))
+            )
+            .align_y(Alignment::Center)
+            .padding(10),
             container(text("Inari").size(30))
                 .align_y(Alignment::Center)
                 .align_x(Alignment::Center)
