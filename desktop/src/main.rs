@@ -80,6 +80,9 @@ pub struct MainUi {
     feed_posts: Vec<PostDb>,
     loading: bool,
     post_upload: Option<PostUp>,
+    pacman: String,
+    packages: String,
+    package_list: Vec<(String, String)>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -97,6 +100,10 @@ pub enum Message {
     FilePick,
     Router(Page),
     TitleChanged(String),
+    DescriptionChanged(String),
+    PacmanChanged(String),
+    PackagesChanged(String),
+    SubmitPackages,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -115,6 +122,9 @@ impl MainUi {
                 feed_posts: vec![],
                 loading: true,
                 post_upload: None,
+                pacman: "".into(),
+                packages: "".into(),
+                package_list: vec![],
             },
             Task::perform(MainUi::fetch_post(), Message::Loaded),
         )
@@ -173,6 +183,18 @@ impl MainUi {
                     self.post_upload = Some(post_upload);
                 }
             }
+            Message::DescriptionChanged(input) => {
+                if let Some(post) = self.post_upload.as_mut() {
+                    post.description = input;
+                } else {
+                    let post_upload = PostUp {
+                        description: input,
+                        ..Default::default()
+                    };
+                    self.post_upload = Some(post_upload);
+                }
+            }
+            _ => todo!(),
         }
     }
 
@@ -256,6 +278,8 @@ impl MainUi {
             column![].into()
         };
 
+        let title_lable: Element<Message> = text("Title:").size(20).into();
+
         let title_input: Element<Message> = text_input(
             "Type some title...",
             &self.post_upload.clone().unwrap_or_default().title,
@@ -263,10 +287,38 @@ impl MainUi {
         .on_input(Message::TitleChanged)
         .into();
 
+        let description_lable: Element<Message> = text("Description:").size(20).into();
+
+        let description_input: Element<Message> = text_input(
+            "Type some description...",
+            &self.post_upload.clone().unwrap_or_default().description,
+        )
+        .on_input(Message::DescriptionChanged)
+        .into();
+
+        let add_packages: Element<Message> = container(column![
+            text("Add package manager, packages"),
+            text_input("pacman -Syu", &self.pacman)
+        ])
+        .style(container::rounded_box)
+        .into();
+
+        // let packages: Element<Message> =
+        //     container(column((0..self.packages).map(|u| text(u).into()))).into();
+
         container(
-            column![pick_button, image, title_input]
-                .spacing(10)
-                .padding(10),
+            column![
+                pick_button,
+                image,
+                title_lable,
+                title_input,
+                description_lable,
+                description_input,
+                add_packages,
+                packages
+            ]
+            .spacing(10)
+            .padding(10),
         )
         .align_x(Alignment::Start)
         .width(Length::Fill)
