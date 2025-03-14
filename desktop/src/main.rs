@@ -5,9 +5,9 @@ use std::fs;
 use iced::advanced::graphics::text::font_system;
 use iced::widget::image::Handle;
 use iced::widget::{
-    Column, Image, MouseArea, column, container, image, row, scrollable, text, text_input,
+    Column, Image, MouseArea, button, column, container, image, row, scrollable, text, text_input,
 };
-use iced::{Alignment, Element, Font, Length, Task, Theme};
+use iced::{Alignment, Element, Font, Length, Task, Theme, color};
 use prost::Message as ProtoMessage;
 use rfd::FileDialog;
 use tracing::Level;
@@ -194,6 +194,12 @@ impl MainUi {
                     self.post_upload = Some(post_upload);
                 }
             }
+            Message::PacmanChanged(input) => {
+                self.pacman = input;
+            }
+            Message::PackagesChanged(input) => {
+                self.packages = input;
+            }
             _ => todo!(),
         }
     }
@@ -298,8 +304,19 @@ impl MainUi {
 
         let add_packages: Element<Message> = container(column![
             text("Add package manager, packages"),
-            text_input("pacman -Syu", &self.pacman)
+            row![
+                text_input("pacman -Syu", &self.pacman)
+                    .on_input(Message::PacmanChanged)
+                    .width(200),
+                text_input("vim git neofetch", &self.packages).on_input(Message::PackagesChanged),
+                button(row![
+                    text("📦").font(ICFONT).size(20).color(color!(0x00)),
+                    text("Add").size(20).color(color!(0x00))
+                ]),
+            ]
+            .spacing(10)
         ])
+        .padding(10)
         .style(container::rounded_box)
         .into();
 
@@ -315,7 +332,6 @@ impl MainUi {
                 description_lable,
                 description_input,
                 add_packages,
-                packages
             ]
             .spacing(10)
             .padding(10),
