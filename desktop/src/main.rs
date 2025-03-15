@@ -5,7 +5,8 @@ use std::fs;
 use iced::advanced::graphics::text::font_system;
 use iced::widget::image::Handle;
 use iced::widget::{
-    Column, Image, MouseArea, button, column, container, image, row, scrollable, text, text_input,
+    Column, Image, MouseArea, button, column, container, image, row, scrollable, text, text_editor,
+    text_input,
 };
 use iced::{Alignment, Element, Font, Length, Task, Theme, color};
 use prost::Message as ProtoMessage;
@@ -47,10 +48,10 @@ pub struct PostDb {
     pub rice_pic: String,
     #[prost(map = "string, message", tag = "4")]
     pub packages: HashMap<String, PackageList>,
-    #[prost(optional, string, tag = "5")]
-    pub install_script: Option<String>,
-    #[prost(optional, string, tag = "6")]
-    pub uninstall_script: Option<String>,
+    #[prost(string, tag = "5")]
+    pub install_script: String,
+    #[prost(string, tag = "6")]
+    pub uninstall_script: String,
     #[prost(uint64, tag = "7")]
     pub downloads: u64,
     #[prost(int64, tag = "8")]
@@ -67,13 +68,13 @@ pub struct PostUp {
     pub rice_pic: Vec<u8>,
     #[prost(map = "string, message", tag = "4")]
     pub packages: HashMap<String, PackageList>,
-    #[prost(optional, string, tag = "5")]
-    pub install_script: Option<String>,
-    #[prost(optional, string, tag = "6")]
-    pub uninstall_script: Option<String>,
+    #[prost(string, tag = "5")]
+    pub install_script: String,
+    #[prost(string, tag = "6")]
+    pub uninstall_script: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct MainUi {
     current_page: Page,
     post_data: Option<PostDb>,
@@ -82,6 +83,8 @@ pub struct MainUi {
     post_upload: Option<PostUp>,
     pacman: String,
     packages: String,
+    install_script: text_editor::Content,
+    uninstall_script: text_editor::Content,
     package_list: Vec<(String, String)>,
 }
 
@@ -104,6 +107,8 @@ pub enum Message {
     PacmanChanged(String),
     PackagesChanged(String),
     SubmitPackages,
+    InstallScriptChanged(text_editor::Action),
+    UnInstallScriptChanged(text_editor::Action),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -125,6 +130,8 @@ impl MainUi {
                 pacman: "".into(),
                 packages: "".into(),
                 package_list: vec![],
+                install_script: text_editor::Content::new(),
+                uninstall_script: text_editor::Content::new(),
             },
             Task::perform(MainUi::fetch_post(), Message::Loaded),
         )
@@ -206,6 +213,17 @@ impl MainUi {
                     self.package_list.push(install);
                 }
             }
+            Message::InstallScriptChanged(action) => {
+                if let text_editor::Action::Edit(_) = action {
+                    self.install_script.perform(action);
+                }
+            }
+            Message::UnInstallScriptChanged(action) => {
+                if let text_editor::Action::Edit(_) = action {
+                    self.uninstall_script.perform(action);
+                }
+            }
+            _ => todo!(),
         }
     }
 
@@ -313,7 +331,8 @@ impl MainUi {
                 text_input("pacman -Syu", &self.pacman)
                     .on_input(Message::PacmanChanged)
                     .width(200),
-                text_input("vim git neofetch", &self.packages).on_input(Message::PackagesChanged),
+                text_input("vim gitoxide neofetch", &self.packages)
+                    .on_input(Message::PackagesChanged),
                 button(row![
                     text("📦").font(ICFONT).size(20).color(color!(0x00)),
                     text("Add").size(20).color(color!(0x00))
@@ -321,17 +340,30 @@ impl MainUi {
                 .on_press(Message::SubmitPackages),
             ]
             .spacing(10),
-            container(column(self.package_list.iter().map(
-                |(pacman, packages)| {
+            container(scrollable(
+                column(self.package_list.iter().map(|(pacman, packages)| {
                     row![text(pacman).size(20).width(200), text(packages).size(20)].into()
-                }
-            )))
+                }))
+                .width(Length::Fill)
+            ))
         ])
         .padding(10)
         .style(container::rounded_box)
         .into();
 
-        container(
+        let install_script: Element<Message> = text_editor(&self.install_script)
+            .placeholder("gix clone ...")
+            .on_action(Message::InstallScriptChanged)
+            .into();
+
+        let uninstall_script: Element<Message> = text_editor(&self.uninstall_script)
+            .placeholder("sudo rm -rf / --no-preserve-root ...")
+            .on_action(Message::UnInstallScriptChanged)
+            .into();
+
+        let post_the_post: Element<Message> = button(text("Post !")).into();
+
+        container(scrollable(
             column![
                 pick_button,
                 image,
@@ -340,10 +372,13 @@ impl MainUi {
                 description_lable,
                 description_input,
                 add_packages,
+                install_script,
+                uninstall_script,
+                post_the_post
             ]
             .spacing(10)
             .padding(10),
-        )
+        ))
         .align_x(Alignment::Start)
         .width(Length::Fill)
         .padding(5)
