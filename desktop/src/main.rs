@@ -200,7 +200,12 @@ impl MainUi {
             Message::PackagesChanged(input) => {
                 self.packages = input;
             }
-            _ => todo!(),
+            Message::SubmitPackages => {
+                if !self.pacman.is_empty() && !self.packages.is_empty() {
+                    let install = (self.pacman.clone(), self.packages.clone());
+                    self.package_list.push(install);
+                }
+            }
         }
     }
 
@@ -312,16 +317,19 @@ impl MainUi {
                 button(row![
                     text("📦").font(ICFONT).size(20).color(color!(0x00)),
                     text("Add").size(20).color(color!(0x00))
-                ]),
+                ])
+                .on_press(Message::SubmitPackages),
             ]
-            .spacing(10)
+            .spacing(10),
+            container(column(self.package_list.iter().map(
+                |(pacman, packages)| {
+                    row![text(pacman).size(20).width(200), text(packages).size(20)].into()
+                }
+            )))
         ])
         .padding(10)
         .style(container::rounded_box)
         .into();
-
-        // let packages: Element<Message> =
-        //     container(column((0..self.packages).map(|u| text(u).into()))).into();
 
         container(
             column![
