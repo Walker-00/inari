@@ -109,6 +109,7 @@ pub enum Message {
     SubmitPackages,
     InstallScriptChanged(text_editor::Action),
     UnInstallScriptChanged(text_editor::Action),
+    PostThePost,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -221,6 +222,20 @@ impl MainUi {
             Message::UnInstallScriptChanged(action) => {
                 if let text_editor::Action::Edit(_) = action {
                     self.uninstall_script.perform(action);
+                }
+            }
+            Message::PostThePost => {
+                if let Some(postup) = self.post_upload.as_mut() {
+                    if !postup.title.is_empty()
+                        && !postup.description.is_empty()
+                        && !postup.rice_pic.is_empty()
+                        && !self.package_list.is_empty()
+                        && !self.install_script.text().is_empty()
+                        && !self.uninstall_script.text().is_empty()
+                    {
+                        let mut packages = HashMap::new();
+                        self.package_list.iter().map(|v| v.1.split(pat));
+                    }
                 }
             }
             _ => todo!(),
@@ -361,7 +376,8 @@ impl MainUi {
             .on_action(Message::UnInstallScriptChanged)
             .into();
 
-        let post_the_post: Element<Message> = button(text("Post !")).into();
+        let post_the_post: Element<Message> =
+            button(text("Post !")).on_press(Message::PostThePost).into();
 
         container(scrollable(
             column![
